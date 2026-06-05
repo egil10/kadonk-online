@@ -1,47 +1,100 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>Kadonk Game</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            text-align: center;
-            margin-top: 50px;
-        }
-        h1 {
-            color: #333;
-        }
-        .game {
-            margin: 20px auto;
-            width: 300px;
-            padding: 20px;
-            border: 1px solid #ccc;
-            border-radius: 8px;
-            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
-        }
-        .buttons, .input-section {
-            margin-top: 10px;
-        }
-        #sendInput {
-            width: 80%;
-            padding: 5px;
-            margin-top: 10px;
-        }
-    </style>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#0e3b27" />
+    <meta name="description" content="Kadonk — a two-player dice bluffing game. Shake, claim, and call your opponent's bluff." />
+    <title>Kadonk — Dice Bluffing Game</title>
+
+    <!-- Fonts: preconnect first so the woff2 starts downloading ASAP -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&display=swap"
+        rel="stylesheet"
+    />
+
+    <link rel="stylesheet" href="styles.css" />
+    <script src="script.js" defer></script>
 </head>
 <body>
-    <h1>It is Kadonk-time!</h1>
-    <div id="game" class="game"></div>
-    <div class="buttons">
-        <button id="startButton" onclick="startGame()">Start Game</button>
-        <button id="shakeButton" style="display: none;" onclick="playTurn('shake')">Shake</button>
-        <button id="openButton" style="display: none;" onclick="playTurn('open')">Open</button>
+    <main class="app">
+        <header class="masthead">
+            <h1 class="masthead__title">Kadonk</h1>
+            <p class="masthead__tagline">Shake. Claim. Catch the bluff.</p>
+        </header>
+
+        <!-- Scoreboard: one panel per player, highlighted when it's their turn -->
+        <section class="scoreboard" aria-label="Players">
+            <article class="player" id="player1" data-player="Player 1">
+                <h2 class="player__name">Player 1</h2>
+                <div class="player__lives" id="lives1" aria-label="Player 1 lives"></div>
+            </article>
+            <span class="scoreboard__vs" aria-hidden="true">vs</span>
+            <article class="player" id="player2" data-player="Player 2">
+                <h2 class="player__name">Player 2</h2>
+                <div class="player__lives" id="lives2" aria-label="Player 2 lives"></div>
+            </article>
+        </section>
+
+        <!-- Table: dice, the standing claim, and the status message -->
+        <section class="table" aria-label="Game table">
+            <p class="table__claim" id="claim" hidden></p>
+
+            <div class="dice" id="dice" aria-label="Dice" aria-live="polite">
+                <div class="die" data-die="1" aria-hidden="true"></div>
+                <div class="die" data-die="2" aria-hidden="true"></div>
+            </div>
+
+            <p class="table__status" id="status" role="status" aria-live="polite">
+                Press <strong>Start game</strong> to begin.
+            </p>
+        </section>
+
+        <!-- Controls swap in and out depending on the phase of the turn -->
+        <section class="controls" aria-label="Controls">
+            <button class="btn btn--primary" id="startButton" type="button">Start game</button>
+            <button class="btn btn--primary" id="shakeButton" type="button" hidden>🎲 Shake</button>
+            <button class="btn btn--danger" id="openButton" type="button" hidden>Call bluff</button>
+
+            <div class="claim-form" id="claimForm" hidden>
+                <label class="claim-form__label" for="claimSelect">Announce a roll</label>
+                <div class="claim-form__row">
+                    <select class="claim-form__select" id="claimSelect" aria-label="Choose what to announce"></select>
+                    <button class="btn btn--primary" id="sendButton" type="button">Announce</button>
+                </div>
+                <p class="claim-form__hint" id="claimHint"></p>
+            </div>
+        </section>
+
+        <button class="rules-toggle" id="rulesToggle" type="button" aria-expanded="false" aria-controls="rules">
+            How to play
+        </button>
+        <div class="rules" id="rules" hidden>
+            <ol>
+                <li><strong>Shake</strong> the dice — only you see the result.</li>
+                <li><strong>Announce</strong> a roll. You may tell the truth or bluff, but it must rank higher than the previous announcement.</li>
+                <li>Your opponent either out-bluffs you with a higher claim, or <strong>calls your bluff</strong>.</li>
+                <li>On a call: if your real roll was at least as high as you claimed, the caller loses a life — otherwise you do.</li>
+                <li><strong>Kadonk</strong> (a 2-1) is the highest roll of all. Last player with lives wins.</li>
+            </ol>
+        </div>
+    </main>
+
+    <!-- Lightweight modal used instead of prompt()/alert() -->
+    <div class="modal" id="modal" hidden>
+        <div class="modal__backdrop" data-modal-dismiss></div>
+        <div class="modal__card" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+            <h2 class="modal__title" id="modalTitle">New game</h2>
+            <label class="modal__label" for="livesInput">Lives per player</label>
+            <input class="modal__input" id="livesInput" type="number" min="1" max="20" value="3" />
+            <p class="modal__error" id="modalError" hidden></p>
+            <div class="modal__actions">
+                <button class="btn btn--ghost" id="modalCancel" type="button">Cancel</button>
+                <button class="btn btn--primary" id="modalConfirm" type="button">Deal</button>
+            </div>
+        </div>
     </div>
-    <div class="input-section" style="display: none;">
-        <input type="number" id="sendInput" placeholder="Send a number" />
-        <button onclick="sendNumber()">Send</button>
-    </div>
-    <script src="script.js"></script>
 </body>
 </html>
